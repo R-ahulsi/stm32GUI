@@ -3,6 +3,8 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QMessageBox>
+#include <QFileDialog>
+#include <QProcess>
 
 // MainWindow::MainWindow(QWidget *parent)
 //     : QMainWindow(parent)
@@ -23,6 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , serial(new QSerialPort(this))
+    , portUpdateTimer(new QTimer(this))
 {
     ui->setupUi(this);
 
@@ -36,13 +39,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     populateSerialPortList();
 
-    // Connecting buttons
     connect(ui->openButton, &QPushButton::clicked, this, &MainWindow::openSerialPort);
     connect(ui->closeButton, &QPushButton::clicked, this, &MainWindow::closeSerialPort);
-    connect(ui->clearButton, &QPushButton::clicked, this, &MainWindow::clearTextBrowser);
+    connect(ui->clearLogButton, &QPushButton::clicked, this, &MainWindow::clearTextBrowser);
     connect(ui->applyButton, &QPushButton::clicked, this, &MainWindow::applyChanges);
-
-    // Connecting serial port's readyRead signal to readData
+    connect(ui->clearStatusButton, &QPushButton::clicked, this, &MainWindow::clearStatusBrowser);
+    connect(ui->selectFileButton, &QPushButton::clicked, this, &MainWindow::selectFile);
+    connect(ui->uploadFileButton, &QPushButton::clicked, this, &MainWindow::uploadFile);
+    connect(portUpdateTimer, &QTimer::timeout, this, &MainWindow::updateSerialPortList);
+    portUpdateTimer->start(3000); // 3000 ms = 3 seconds
     connect(serial, &QSerialPort::readyRead, this, &MainWindow::readData);
 }
 
@@ -58,44 +63,20 @@ void MainWindow::populateSerialPortList()
     }
 }
 
+void MainWindow::updateSerialPortList()
+{
+    populateSerialPortList();
+}
+
 MainWindow::~MainWindow(){
     serial->close();
     delete ui;
 }
 
-// void MainWindow::openSerialPort(){
-//     if (serial->isOpen()) {
-//         QMessageBox::warning(this, "Error", "Serial port is already open.");
-//         return;
-//     }
-
-//     // Get the selected serial port name
-//     QString portName = ui->serialPortComboBox->currentText();
-//     serial->setPortName(portName);
-
-//     // Get the baud rate from the combo box
-//     int baudRate = ui->baudRateComboBox->currentText().toInt();
-//     serial->setBaudRate(baudRate);
-
-//     // Serial port parameters
-//     // serial->setPortName("COM3");
-//     serial->setDataBits(QSerialPort::Data8);
-//     serial->setParity(QSerialPort::NoParity);
-//     serial->setStopBits(QSerialPort::OneStop);
-//     serial->setFlowControl(QSerialPort::NoFlowControl);
-
-//     if (serial->open(QIODevice::ReadOnly)) {
-//         QMessageBox::information(this, "Serial Port", "Opened successfully.");
-//     } else {
-//         QMessageBox::critical(this, "Error", "Failed to open serial port.");
-//     }
-// }
-
 void MainWindow::openSerialPort(){
     // Check if the serial port is already open
     if (serial->isOpen()) {
         ui->statusTextBrowser->append("Error: Serial port is already open.");
-        QMessageBox::warning(this, "Error", "Serial port is already open.");
         return;
     }
 
@@ -125,9 +106,8 @@ void MainWindow::closeSerialPort(){
     if (serial->isOpen()) {
         serial->close();
         ui->statusTextBrowser->append("Serial Port closed successfully.");
-        QMessageBox::information(this, "Serial Port", "Closed successfully.");
     } else {
-        QMessageBox::warning(this, "Error", "Serial port is not open.");
+        ui->statusTextBrowser->append("Error: Serial port is not open.");
     }
 }
 
@@ -179,7 +159,92 @@ void MainWindow::readData(){
     }
 }
 
-void MainWindow::clearTextBrowser()
-{
+void MainWindow::clearTextBrowser(){
     ui->textBrowser->clear();  // Clear the text browser
+    ui->statusTextBrowser->append("Text browser cleared");
 }
+
+void MainWindow::clearStatusBrowser(){
+    ui->statusTextBrowser->clear();  // Clear the status text browser
+}
+
+void MainWindow::selectFile() {
+    // QString fileName = QFileDialog::getOpenFileName(this, "Select File", "", "Binary Files (*.bin);;All Files (*)");
+
+    QString fileName = QFileDialog::getOpenFileName(
+        this,
+        "Select File",
+        "C:/osProjects",  // Starting directory, correctly specified as a string
+        "Binary Files (*.elf);;All Files (*)"
+        );
+
+    if (!fileName.isEmpty()) {
+        ui->selectedFileLabel->setText(fileName);  // Display the selected file path
+    } else {
+        ui->selectedFileLabel->setText("No file selected");
+    }
+}
+
+void MainWindow::uploadFile() {
+    QString portName = ui->serialPortComboBox->currentText();
+    serial->setPortName(portName);
+
+    if (serial->portName().isEmpty()) {
+        ui->statusTextBrowser->append("Error: No serial port selected. Please select a serial port.");
+        QMessageBox::warning(this, "Error", "No serial port selected. Please select a serial port.");
+        return;
+    }
+
+    QString fileName = ui->selectedFileLabel->text();
+
+    if (fileName.isEmpty() || fileName == "No file selected") {
+        ui->statusTextBrowser->append("Error: No file selected.");
+        return;
+    }
+
+    ui->statusTextBrowser->append("Starting upload process...");
+
+    // Assuming STM32_Programmer_CLI is available in PATH
+    QProcess *process = new QProcess(this);
+    QString command = QString("\"C:/ST/STM32CubeIDE_1.16.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.cubeprogrammer.win32_2.1.400.202404281720/tools/bin/STM32_Programmer_CLI.exe\" -c port=SWD -d %1 -run")
+                          .arg(fileName);
+
+    process->start(command);
+
+    // if (!process->waitForStarted()) {
+    //     ui->statusTextBrowser->append("Error: Failed to start upload process.");
+    //     return;
+    // }
+
+    if (!process->waitForStarted()) {
+        ui->statusTextBrowser->append("Error: Failed to start upload process. " + process->errorString());
+        return;
+    }
+
+    if (!process->waitForFinished()) {
+        ui->statusTextBrowser->append("Error: Upload process failed.");
+        return;
+    }
+
+    QString output = process->readAllStandardOutput();
+    QString errorOutput = process->readAllStandardError();
+    ui->statusTextBrowser->append("Upload process complete.");
+    ui->statusTextBrowser->append(output);
+    if (!errorOutput.isEmpty()) {
+        ui->statusTextBrowser->append("Error Output: " + errorOutput);
+    }
+    process->deleteLater();
+}
+
+// void MainWindow::selectDirectory() {
+//     // QString directory = QFileDialog::getExistingDirectory(
+//     //     this,
+//     //     "Select Directory",
+//     //     "C:/osProjects",
+//     //     QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+//     //     );
+
+//     // if (!directory.isEmpty()) {
+//     //     ui->directoryLabel->setText(directory);  // Update a QLabel or similar widget with the selected directory
+//     // }
+// }

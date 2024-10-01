@@ -1,5 +1,6 @@
 C:/osProjects/PerformanceMonitor/build/Desktop_Qt_6_7_2_MinGW_64_bit-Debug/PerformanceMonitor_autogen/EWIEGA46WW/moc_mainwindow.cpp: C:/osProjects/PerformanceMonitor/mainwindow.h \
   C:/osProjects/PerformanceMonitor/build/Desktop_Qt_6_7_2_MinGW_64_bit-Debug/PerformanceMonitor_autogen/moc_predefs.h \
+  C:/Qt/6.7.2/mingw_64/include/QtCore/QTimer \
   C:/Qt/6.7.2/mingw_64/include/QtCore/q20functional.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/q20memory.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/q20type_traits.h \
@@ -13,6 +14,7 @@ C:/osProjects/PerformanceMonitor/build/Desktop_Qt_6_7_2_MinGW_64_bit-Debug/Perfo
   C:/Qt/6.7.2/mingw_64/include/QtCore/qatomic.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/qatomic_cxx11.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/qbasicatomic.h \
+  C:/Qt/6.7.2/mingw_64/include/QtCore/qbasictimer.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/qbindingstorage.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/qbytearray.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/qbytearrayalgorithms.h \
@@ -104,6 +106,7 @@ C:/osProjects/PerformanceMonitor/build/Desktop_Qt_6_7_2_MinGW_64_bit-Debug/Perfo
   C:/Qt/6.7.2/mingw_64/include/QtCore/qtdeprecationmarkers.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/qtenvironmentvariables.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/qtextstream.h \
+  C:/Qt/6.7.2/mingw_64/include/QtCore/qtimer.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/qtmetamacros.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/qtnoop.h \
   C:/Qt/6.7.2/mingw_64/include/QtCore/qtpreprocessorsupport.h \
